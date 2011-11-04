@@ -1,0 +1,54 @@
+<table border="0" tal:define="subwidgets view/subwidgets">
+  <tr>
+    <th tal:repeat="widget subwidgets" tal:content="widget/label"></th>
+  </tr>
+  <tr>
+    <td tal:repeat="widget view/subwidgets">
+      <input tal:replace="structure widget" />
+    </td>
+    <td>
+      <input type="submit" value="Add foo"
+            tal:attributes="name string:${view/name}.add;
+                             value view/addButtonLabel"
+            tal:condition="not:view/isEditing" />
+      <input type="submit" value="Save"
+            tal:attributes="name view/savebutton;
+                             value view/saveButtonLabel"
+            tal:condition="view/isEditing" />
+      <input type="hidden"
+         tal:attributes="name string:${view/name}.editing;
+          value python:request.form[view.editbutton]"
+          tal:condition="view/isEditing" />
+      <input type="submit" value="Cancel"
+            tal:attributes="name view/cancelbutton;
+                             value view/cancelButtonLabel"
+            tal:condition="view/isEditing" />
+    </td>
+  </tr>
+  <tr tal:repeat="widgets view/table">
+    <td tal:repeat="widget widgets" tal:content="widget"></td>
+    <td>
+      <span tal:replace="structure python:view.editLink(repeat['widgets'].index())">edit</span>
+      <span tal:replace="structure python:view.deleteLink(repeat['widgets'].index())">delete</span>
+    </td>
+  </tr>
+</table>
+
+<tal:block tal:repeat="widgets python:view.table('input')">
+  <span tal:repeat="widget widgets" tal:replace="structure widget/hidden"></span>	
+</tal:block>
+
+<input tal:replace="structure view/marker" />
+<script>
+$(document).ready(function(){
+  $("a[row!='']").click(function(event){
+    event.preventDefault();
+    form = $(this).parents("form");
+    var butt = $("<input />", {type:"hidden", name:$(this).attr("name"),
+value:$(this).attr("row")});
+    form.append(butt);
+    console.log('trying to submit...');
+    form.submit();
+  });
+});
+</script>
