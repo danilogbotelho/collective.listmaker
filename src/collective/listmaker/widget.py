@@ -20,6 +20,8 @@ class ListMakerWidget(BrowserWidget, InputWidget):
 
     _type = tuple
 
+    _addButtonLabel = None
+
     def __init__(self, context, field, request, **kw):
         super(ListMakerWidget, self).__init__(context, request)
 
@@ -41,15 +43,15 @@ class ListMakerWidget(BrowserWidget, InputWidget):
     def _update(self):
         sequence = self._getRenderedValue()
 
-        editval = self.request.form.get(self.editbutton, None)
-        if editval:
-            editval = int(editval)
-            for f, v in zip(self.names, sequence[editval]):
+        editrow = self.request.form.get(self.editbutton, None)
+        if editrow:
+            self.editrow = editrow = int(editrow)
+            for f, v in zip(self.names, sequence[editrow]):
                 self.getSubWidget(f).setRenderedValue(v)
         elif self.savebutton in self.request.form:
-            editval = int(self.request.form[self.editingfield])
+            editrow = int(self.request.form[self.editingfield])
             newval = self._getInputValueFromSubWidgets()
-            sequence[editval] = tuple(newval)
+            sequence[editrow] = tuple(newval)
             self._clear()
 
         self.sequence = self._type(sequence)
@@ -115,13 +117,20 @@ class ListMakerWidget(BrowserWidget, InputWidget):
     def subwidgets(self):
         return [self.getSubWidget(name) for name in self.names]
 
-    def addButtonLabel(self):
-        button_label = _('Add %s')
-        button_label = translate(button_label, context=self.request,
-                                 default=button_label)
-        title = self.context.title or self.context.__name__
-        title = translate(title, context=self.request, default=title)
-        return button_label % title
+    def getAddButtonLabel(self):
+        if self._addButtonLabel is None:
+            button_label = _('Add %s')
+            button_label = translate(button_label, context=self.request,
+                                     default=button_label)
+            title = self.context.title or self.context.__name__
+            title = translate(title, context=self.request, default=title)
+            self._addButtonLabel = button_label % title
+        return self._addButtonLabel
+        
+    def setAddButtonLabel(self, value):
+        self._addButtonLabel = value
+
+    addButtonLabel = property(getAddButtonLabel, setAddButtonLabel)
 
     def saveButtonLabel(self):
         return _(u'Save')
@@ -150,10 +159,12 @@ class ListMakerWidget(BrowserWidget, InputWidget):
             try:
                 value.append(self.getSubWidget(name).getInputValue())
             except WidgetInputError, error:
+                import pdb;pdb.set_trace()
                 self._error = WidgetInputError(
                     self.context.__name__, self.label, error)
                 raise self._error
             except ValidationError, error:
+                import pdb;pdb.set_trace()
                 self._error = WidgetInputError(
                     self.context.__name__, self.label, error)
                 raise self._error
@@ -182,7 +193,7 @@ class ListMakerWidget(BrowserWidget, InputWidget):
                 values = [w.getInputValue() for w in self.subwidgets()]
                 sequence.append(tuple(values))
                 self._clear()
-            except WidgetInputError:
+            except WidgetInputError, error:
                 pass  # TODO: How can we tell the user about this?
 
         todel = self.request.form.get(self.deletebutton, None)
@@ -233,17 +244,20 @@ class ListMakerWidget(BrowserWidget, InputWidget):
                 % (self.countfield, count))
 
     def getInputValue(self):
-        if self.hasInput():
-            sequence = []
-            # only process subwidgets if add button has been pressed
-            if self.addbutton in self.request.form:
-                sequence.append(self._getInputValueFromSubWidgets())
+        if not self.hasInput():
+            raise MissingInputError(self.name, self.label, None)
 
-            sequence.extend(self._getInputValueFromTable())
+        sequence = []
+        # only process subwidgets if add button has been pressed
+        if self.addbutton in self.request.form:
+            sequence.append(self._getInputValueFromSubWidgets())
 
-            if sequence:
-                return sequence
-        raise MissingInputError(self.context.__name__, self.context.title)
+        sequence.extend(self._getInputValueFromTable())
+
+        if sequence:
+            return sequence
+
+        return []  # self.context.missing_value
 
     def editLink(self, row):
         name = self.editbutton
