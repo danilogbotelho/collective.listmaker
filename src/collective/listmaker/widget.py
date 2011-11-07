@@ -1,6 +1,6 @@
 from zope.interface import implements
 from zope.schema import getFieldNamesInOrder
-from zope.schema.interfaces import ValidationError
+from zope.schema.interfaces import ValidationError, RequiredMissing
 from zope.browserpage import ViewPageTemplateFile
 from zope.i18n import translate
 
@@ -245,7 +245,8 @@ class ListMakerWidget(BrowserWidget, InputWidget):
 
     def getInputValue(self):
         if not self.hasInput():
-            raise MissingInputError(self.name, self.label, None)
+            raise MissingInputError(self.context.__name__,
+                                    self.context.title, None)
 
         sequence = []
         # only process subwidgets if add button has been pressed
@@ -254,10 +255,13 @@ class ListMakerWidget(BrowserWidget, InputWidget):
 
         sequence.extend(self._getInputValueFromTable())
 
-        if sequence:
-            return sequence
+        if not sequence and self.context.required:
+            self._error = MissingInputError(self.context.__name__,
+                                        self.context.title,
+                                        RequiredMissing(self.context.__name__))
+            raise self._error
 
-        return []  # self.context.missing_value
+        return sequence
 
     def editLink(self, row):
         name = self.editbutton
