@@ -33,7 +33,8 @@
   <tr tal:repeat="widgets view/table"
     tal:attributes="class python:(repeat['widgets'].even() and 'even' or 'odd') +
         ((isEditing and view.editrow==repeat['widgets'].index())
-          and ' editing' or '')">
+          and ' editing' or '') + (repeat['widgets'].end() and ' last'
+        or (repeat['widgets'].start() and ' first' or ''))">
     <td tal:repeat="widget widgets" tal:content="widget"></td>
     <td class="row-actions">
       <span tal:replace="structure python:view.editLink(repeat['widgets'].index())">edit</span>
