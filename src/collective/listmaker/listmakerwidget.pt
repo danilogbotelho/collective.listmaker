@@ -58,5 +58,5 @@ value:$$(this).attr('row')});
     form.append(butt);
     form.submit();
   });
-});">
+});" tal:condition="view/jscript">
 </script>

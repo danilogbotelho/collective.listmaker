@@ -22,12 +22,13 @@ class ListMakerWidget(BrowserWidget, InputWidget):
 
     _addButtonLabel = None
 
-    def __init__(self, context, field, request, **kw):
+    def __init__(self, context, field, request, jscript=True, **kw):
         super(ListMakerWidget, self).__init__(context, request)
 
         self.names = getFieldNamesInOrder(self.context.value_type.schema)
 
         # set up my subwidgets
+        self.jscript = jscript
 
         # but first, handle foo_widget specs being passed in
         for k, v in kw.items():
