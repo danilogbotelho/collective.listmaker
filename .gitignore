@@ -1,2 +1,2 @@
-*.py?
-*.egg-info/
+*.py[co]
+*.egg-info
